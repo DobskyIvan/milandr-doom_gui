@@ -4,6 +4,10 @@
 
 #include "string.h"
 
+#ifdef EMULATION_EN
+#include "../emulator/emu.h"
+#endif // EMULATION_EN
+
 // Контекст подсистемы отрисовки
 LCD_Crystal CurrentCrystal = LCD_CRYSTAL1;  // Текущий выбранный кристал
 LCD_Method CurrentMethod = MET_OR;  // Текущий метод отрисовки
@@ -75,6 +79,7 @@ u32 ReadLCD_Data() {
   return ret;
 }
 
+#ifndef EMULATION_EN
 void LCD_INIT(void) {
   u32 crystal;
 
@@ -93,7 +98,13 @@ void LCD_INIT(void) {
     LCD_START_LINE(0);
   }
 }
+#else 
+void LCD_INIT(void) {
+	;
+}
+#endif // EMULATION_EN
 
+#ifndef EMULATION_EN
 void LCD_CLS(void) {
   u32 i, j, crystal;
 
@@ -110,6 +121,18 @@ void LCD_CLS(void) {
     LCD_ON;
   }
 }
+#else 
+void LCD_CLS(void) {
+	u32 i, j, crystal, lcdadr;
+	
+	for (crystal = LCD_CRYSTAL1; crystal < NUM_LCD_CRYSTALS; crystal++) {
+		lcdadr = 0;
+		for (i = 0; i < 8; i++) {
+			for (j = 0; j < 64; j++) ITM_SendCharInt((((u8)(crystal+1))<<24) | (((u8)i)<<16) | (((u8)(lcdadr++))<<8) | (((u8)0)<<0));
+		}
+	}
+}
+#endif // EMULATION_EN
 
 // Утилиты работы с буфером
 
@@ -172,6 +195,7 @@ void RestorePrevBuffer(void) {
   memcpy(Buffer.buffer, Buffer.prev_buffer, sizeof(Buffer.buffer));
 }
 
+#ifndef EMULATION_EN
 void DrawBuffer(bool clearBuffer) {
   int i, j, k, mask;
   int next = CRYSTAL_WIDTH;
@@ -205,6 +229,36 @@ void DrawBuffer(bool clearBuffer) {
   }
   UpdatePrevBuffer(clearBuffer);  // current buffer is now previous buffer
 }
+#else 
+void DrawBuffer(bool clearBuffer) {
+	int i, j, k, mask, lcdadr;
+	int next = CRYSTAL_WIDTH;
+	// update changes
+	UpdateBufferChanges();
+	// draw only changed bytes
+	for (i = 0; i < CRYSTAL_COUNT; i++) {
+		lcdadr = 0;
+		for (k = 0; k < PAGE_COUNT; k++) {
+			mask = 1 << k;
+			for (j = 0; j < CRYSTAL_WIDTH; j++) {
+				// send data to crystal
+				// iterate through rows (0-7) and check if bit is set in changes[i][j]
+				if (Buffer.changes[i][j] & mask) {
+					// set address only if it's not in sequence
+					if (j != next) {
+						lcdadr = j;
+						next = j;
+					}
+					next++;
+					// send row data
+					ITM_SendCharInt((((u8)(i+1))<<24) | (((u8)k)<<16) | (((u8)(lcdadr++))<<8) | (((u8)(Buffer.buffer[i][k][j]))<<0));
+				}
+			}
+		}
+	}
+	UpdatePrevBuffer(clearBuffer);  // current buffer is now previous buffer
+}
+#endif // EMULATION_EN
 
 void DrawBuffer() { DrawBuffer(true); }
 

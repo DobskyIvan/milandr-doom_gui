@@ -1,23 +1,9 @@
 # Doom on Milandr
 
-yes.
+This is a fork of this [repository](https://github.com/potat-dev/milandr-doom)
 
-A fully functioning port of the video game Doom to the Milandr MCU 1986VE91T microcontroller
+With gui emulation on PC:
 
-# Demo on YouTube
+![main.vi](./doc/main.vi.gif "main.vi")  
 
-[![YT video](https://img.youtube.com/vi/U3ypc9HT1Xs/maxresdefault.jpg)](https://www.youtube.com/watch?v=U3ypc9HT1Xs)
-
-# Used tools
-
-- Keil uVision 5 MDK-ARM
-- Milandr 1986VE91T dev board
-- Visual Studio Code
-- [Keil Assistant](https://marketplace.visualstudio.com/items?itemName=CL.keil-assistant) extension
-
-# Dev board & MCU specs
-
-- 32-bit ARM Cortex-M3 8MHz
-- 128K Flash, 32К RAM
-- 128x64 LCD Display
-- 5 buttons
+The mcu is connected via st-link to a PC with an OpenOCD server running. LabVIEW virtual instruments provides packet exchange with cortex m debug trace. They process keystrokes on the keyboard (WASD+ENTER) and render data to the display.
